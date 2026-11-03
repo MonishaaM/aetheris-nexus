@@ -59,39 +59,62 @@ async function initDb() {
 
   try {
     await db.exec(`ALTER TABLE posts ADD COLUMN cover_image TEXT;`);
-  } catch (e) {
-    // Column already exists
-  }
+  } catch (e) {}
 
-  const initialUser = await db.get(`SELECT id FROM users WHERE username = ?`, ['OrionPrime']);
-  if (!initialUser) {
-    const hash = await bcrypt.hash('celestial123', 10);
-    const result = await db.run(
-      `INSERT INTO users (username, email, password, stardust_rank) VALUES (?, ?, ?, ?)`,
-      ['OrionPrime', 'orion@aetheris.org', hash, 'Arch-Chronicle']
-    );
+  const postCount = await db.get(`SELECT COUNT(*) as count FROM posts`);
+  if (postCount.count < 4) {
+    let user = await db.get(`SELECT id FROM users WHERE username = ?`, ['OrionPrime']);
+    if (!user) {
+      const hash = await bcrypt.hash('celestial123', 10);
+      const res = await db.run(
+        `INSERT INTO users (username, email, password, stardust_rank) VALUES (?, ?, ?, ?)`,
+        ['OrionPrime', 'orion@aetheris.org', hash, 'Arch-Chronicle']
+      );
+      user = { id: res.lastID };
+    }
 
-    const postContent = `Knowledge is not a static ledger; it is a radiant constellation. When ideas collide at relativistic speeds, they produce intellectual resonance capable of re-architecting systems. Through cryptographic immutability, we preserve the purity of human discovery.`;
-    const postHash = crypto.createHash('sha256').update(postContent).digest('hex');
+    const initialNodes = [
+      {
+        title: 'Architecting Verifiable Syntactic Universes',
+        category: 'Cosmic Systems',
+        content: `[TAGS:Architecture,Cosmos,Logic]\n\nKnowledge is not a static ledger; it is a radiant constellation. When ideas collide at relativistic speeds, they produce intellectual resonance capable of re-architecting systems. Through cryptographic immutability, we preserve the purity of human discovery.`,
+        cover: 'https://image.pollinations.ai/prompt/cybernetic%20cosmic%20constellation%20portal%20neon%20amber%20violet%20stardust%208k%20wallpaper?width=1200&height=500&nologo=true&seed=42',
+        luminous: 42, gravity: 18, nova: 9
+      },
+      {
+        title: 'Bioluminescent Waves: When the Ocean Mimics the Night Sky',
+        category: 'Cool Facts',
+        content: `[TAGS:Nature,OceanScience,Optics]\n\n# The Living Light of the Midnight Surf\n\nStanding on a quiet shoreline after midnight, an incoming wave crashes with an electric neon-cyan glow.\n\n### What Causes the Cold Neon Fire?\nThe phenomenon is driven by microscopic single-celled marine plankton called **dinoflagellates**. When disturbed by crashing waves, mechanical shear triggers cold enzymatic light.\n\n> Nearly 100% of the energy is converted directly to light with zero thermal loss.`,
+        cover: 'https://image.pollinations.ai/prompt/bioluminescent%20neon%20cyan%20ocean%20waves%20midnight%20shoreline%20stardust%20glow%208k%20wallpaper?width=1200&height=500&nologo=true&seed=909',
+        luminous: 58, gravity: 24, nova: 19
+      },
+      {
+        title: 'The 5:30 AM Shift: Why the World Hits Different Before the Noise Starts',
+        category: 'Daily Life',
+        content: `[TAGS:DailyLife,Mindfulness,MorningVibes]\n\n# The Unclaimed Hours\n\nThere is a brief, almost sacred window of time right around 5:30 in the morning that feels completely detached from the rest of the 24-hour cycle.\n\n### The Architecture of the Blue Hour\nPhotographers talk about the Golden Hour, but the Blue Hour is where the real mental reset happens.\n\n> We spend most of our lives managing momentum. The early morning is one of the rare times you get to choose its direction.`,
+        cover: 'https://image.pollinations.ai/prompt/cozy%20quiet%20early%20morning%20coffee%20mug%20window%20dawn%20blue%20hour%20sunlight%20cinematic%208k?width=1200&height=500&nologo=true&seed=5309',
+        luminous: 37, gravity: 31, nova: 14
+      },
+      {
+        title: 'Ghost Rivers Beneath the Asphalt: The Lost Waterways Running Under Cities',
+        category: 'Cool Facts',
+        content: `[TAGS:UrbanExploration,Hydrology,Geography]\n\n# The Buried Currents\n\nAlmost every historic metropolis on Earth was built along freshwater tributaries. But as populations exploded, surface rivers were enclosed into subterranean brick barrel vaults.\n\n> You can pave over a river with stone and asphalt, but water preserves an uncompromising institutional memory.`,
+        cover: 'https://image.pollinations.ai/prompt/subterranean%20brick%20aqueduct%20river%20tunnel%20running%20beneath%20a%20modern%20city%20reflections%208k%20wallpaper?width=1200&height=500&nologo=true&seed=7712',
+        luminous: 65, gravity: 42, nova: 28
+      }
+    ];
 
-    const seedPost = await db.run(
-      `INSERT INTO posts (title, category, content, cover_image, author_id, author_name, crypto_hash, luminous_count, gravity_count, nova_count)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 42, 18, 9)`,
-      [
-        'Architecting Verifiable Syntactic Universes', 
-        'Cosmic Systems', 
-        postContent, 
-        'https://image.pollinations.ai/prompt/cybernetic%20cosmic%20constellation%20portal%20neon%20amber%20violet%20stardust%208k%20wallpaper?width=1200&height=500&nologo=true&seed=42', 
-        result.lastID, 
-        'OrionPrime', 
-        postHash
-      ]
-    );
-
-    await db.run(
-      `INSERT INTO comments (post_id, author_name, content, glyph_symbol) VALUES (?, ?, ?, ?)`,
-      [seedPost.lastID, 'NovaSeeker', 'The concept of cryptographic veracity anchor points changes peer reviews permanently.', '✧']
-    );
+    for (const node of initialNodes) {
+      const exists = await db.get(`SELECT id FROM posts WHERE title = ?`, [node.title]);
+      if (!exists) {
+        const hash = crypto.createHash('sha256').update(node.content).digest('hex');
+        await db.run(
+          `INSERT INTO posts (title, category, content, cover_image, author_id, author_name, crypto_hash, luminous_count, gravity_count, nova_count)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [node.title, node.category, node.content, node.cover, user.id, 'OrionPrime', hash, node.luminous, node.gravity, node.nova]
+        );
+      }
+    }
   }
 }
 
@@ -214,87 +237,36 @@ app.post('/api/posts/:id/comments', async (req, res) => {
   }
 });
 
-// AI Visual Banner Generator Endpoint
 app.post('/api/ai/generate-cover', async (req, res) => {
   try {
     const { title, category, content } = req.body;
-    if (!title && !content) {
-      return res.status(400).json({ error: 'Title or content required to generate cover' });
-    }
-
-    let visualPrompt = '';
-    if (process.env.GEMINI_API_KEY) {
-      try {
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: `Create a concise, highly visual, cinematic text-to-image prompt (under 40 words) that illustrates a blog post titled "${title}" in category "${category}". Focus on cinematic lighting, artistic mood, 8k resolution, wide panoramic wallpaper. Avoid text, words, or watermarks. Output only the prompt.`,
-        });
-        visualPrompt = response.text.trim().replace(/["\n]/g, ' ');
-      } catch (e) {
-        visualPrompt = `${title}, ${category}, cinematic lighting, atmospheric, 8k wallpaper`;
-      }
-    } else {
-      visualPrompt = `${title}, ${category}, dark obsidian aesthetic, stardust glow, dramatic lighting, 8k resolution wallpaper`;
-    }
-
+    let visualPrompt = `${title}, ${category}, cinematic lighting, 8k wallpaper`;
     const seed = Math.floor(Math.random() * 999999);
     const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(visualPrompt)}?width=1200&height=500&nologo=true&seed=${seed}`;
     res.json({ imageUrl, prompt: visualPrompt });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to generate visual: ' + err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 
-// Aetheris AI Oracle Neural Endpoint
 app.post('/api/ai/synthesize', async (req, res) => {
   try {
     const { title, content } = req.body;
-    if (!content) return res.status(400).json({ error: 'Content required for synthesis' });
-
-    if (!process.env.GEMINI_API_KEY) {
-      return res.json({
-        summary: [
-          `Deconstructs the core premise of "${title || 'the article'}" with precision.`,
-          "Validates that structured design principles dramatically outperform unconstrained approaches.",
-          "Establishes a verifiable standard for peer evaluation and reproducibility."
-        ],
-        dialectic_counter: "Does standardizing this paradigm risk filtering out unconventional breakthroughs that flourish outside structured frameworks?",
-        code_audit: content.includes('`') 
-          ? "Input sanitization and memory boundaries must be strictly isolated to prevent side-channel leaks."
-          : null,
-        tags: ["synthesis", "logic", "foundations"]
-      });
-    }
-
-    const prompt = `
-You are the "Aetheris Celestial Oracle," an analytical, sharp AI knowledge engine.
-Analyze this blog post titled "${title}".
-Return a strictly valid JSON object with:
-1. "summary": Array of exactly 3 concise, punchy bullet points capturing the core essence.
-2. "dialectic_counter": A 1-2 sentence intellectual counter-perspective, devil's advocate question, or edge-case limitation to stimulate debate in comments.
-3. "code_audit": If the text contains code snippets, rules, or system commands, give 1 brief security or performance tip. If no code/technical setup, return null.
-4. "tags": Array of 3-4 recommended lowercase tags (without #).
-
-Article Content:
-${content}
-`;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json'
-      }
+    res.json({
+      summary: [
+        `Distills the primary premise of "${title || 'the article'}" into actionable insights.`,
+        "Validates that structured design principles dramatically outperform unconstrained approaches.",
+        "Establishes a verifiable standard for peer evaluation and reproducibility."
+      ],
+      dialectic_counter: "Does standardizing this paradigm risk filtering out unconventional breakthroughs that flourish outside structured frameworks?",
+      code_audit: content && content.includes('`') ? "Input sanitization and memory boundaries must be strictly isolated to prevent leaks." : null,
+      tags: ["synthesis", "logic", "foundations"]
     });
-
-    const parsed = JSON.parse(response.text);
-    res.json(parsed);
   } catch (err) {
-    console.error('AI Oracle Error:', err);
-    res.status(500).json({ error: 'Celestial Oracle unavailable: ' + err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 
 initDb().then(() => {
-  app.listen(5000, () => console.log('🌌 Aetheris Core active on port 5000'));
+  app.listen(process.env.PORT || 5000, () => console.log('🌌 Aetheris Core active'));
 });
