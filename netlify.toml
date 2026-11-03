@@ -1,0 +1,16 @@
+﻿[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Proxy all backend API calls to Render
+[[redirects]]
+  from = "/api/*"
+  to = "https://aetheris-nexus.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+# SPA fallback
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
