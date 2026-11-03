@@ -61,59 +61,59 @@ async function initDb() {
     await db.exec(`ALTER TABLE posts ADD COLUMN cover_image TEXT;`);
   } catch (e) {}
 
-  const postCount = await db.get(`SELECT COUNT(*) as count FROM posts`);
-  if (postCount.count < 4) {
-    let user = await db.get(`SELECT id FROM users WHERE username = ?`, ['OrionPrime']);
-    if (!user) {
-      const hash = await bcrypt.hash('celestial123', 10);
-      const res = await db.run(
-        `INSERT INTO users (username, email, password, stardust_rank) VALUES (?, ?, ?, ?)`,
-        ['OrionPrime', 'orion@aetheris.org', hash, 'Arch-Chronicle']
-      );
-      user = { id: res.lastID };
+  // Ensure OrionPrime author exists
+  let user = await db.get(`SELECT id FROM users WHERE username = ?`, ['OrionPrime']);
+  if (!user) {
+    const hash = await bcrypt.hash('celestial123', 10);
+    const res = await db.run(
+      `INSERT INTO users (username, email, password, stardust_rank) VALUES (?, ?, ?, ?)`,
+      ['OrionPrime', 'orion@aetheris.org', hash, 'Arch-Chronicle']
+    );
+    user = { id: res.lastID };
+  }
+
+  // Force seed all 4 articles individually if they do not exist
+  const initialNodes = [
+    {
+      title: 'Architecting Verifiable Syntactic Universes',
+      category: 'Cosmic Systems',
+      content: `[TAGS:Architecture,Cosmos,Logic]\n\nKnowledge is not a static ledger; it is a radiant constellation. When ideas collide at relativistic speeds, they produce intellectual resonance capable of re-architecting systems. Through cryptographic immutability, we preserve the purity of human discovery.`,
+      cover: 'https://image.pollinations.ai/prompt/cybernetic%20cosmic%20constellation%20portal%20neon%20amber%20violet%20stardust%208k%20wallpaper?width=1200&height=500&nologo=true&seed=42',
+      luminous: 42, gravity: 18, nova: 9
+    },
+    {
+      title: 'Bioluminescent Waves: When the Ocean Mimics the Night Sky',
+      category: 'Cool Facts',
+      content: `[TAGS:Nature,OceanScience,Optics]\n\n# The Living Light of the Midnight Surf\n\nStanding on a quiet shoreline after midnight, an incoming wave crashes with an electric neon-cyan glow.\n\n### What Causes the Cold Neon Fire?\nThe phenomenon is driven by microscopic single-celled marine plankton called **dinoflagellates**. When disturbed by crashing waves, mechanical shear triggers cold enzymatic light.\n\n> Nearly 100% of the energy is converted directly to light with zero thermal loss.`,
+      cover: 'https://image.pollinations.ai/prompt/bioluminescent%20neon%20cyan%20ocean%20waves%20midnight%20shoreline%20stardust%20glow%208k%20wallpaper?width=1200&height=500&nologo=true&seed=909',
+      luminous: 58, gravity: 24, nova: 19
+    },
+    {
+      title: 'The 5:30 AM Shift: Why the World Hits Different Before the Noise Starts',
+      category: 'Daily Life',
+      content: `[TAGS:DailyLife,Mindfulness,MorningVibes]\n\n# The Unclaimed Hours\n\nThere is a brief, almost sacred window of time right around 5:30 in the morning that feels completely detached from the rest of the 24-hour cycle.\n\n### The Architecture of the Blue Hour\nPhotographers talk about the Golden Hour, but the Blue Hour is where the real mental reset happens.\n\n> We spend most of our lives managing momentum. The early morning is one of the rare times you get to choose its direction.`,
+      cover: 'https://image.pollinations.ai/prompt/cozy%20quiet%20early%20morning%20coffee%20mug%20window%20dawn%20blue%20hour%20sunlight%20cinematic%208k?width=1200&height=500&nologo=true&seed=5309',
+      luminous: 37, gravity: 31, nova: 14
+    },
+    {
+      title: 'Ghost Rivers Beneath the Asphalt: The Lost Waterways Running Under Cities',
+      category: 'Cool Facts',
+      content: `[TAGS:UrbanExploration,Hydrology,Geography]\n\n# The Buried Currents\n\nAlmost every historic metropolis on Earth was built along freshwater tributaries. But as populations exploded, surface rivers were enclosed into subterranean brick barrel vaults.\n\n> You can pave over a river with stone and asphalt, but water preserves an uncompromising institutional memory.`,
+      cover: 'https://image.pollinations.ai/prompt/subterranean%20brick%20aqueduct%20river%20tunnel%20running%20beneath%20a%20modern%20city%20reflections%208k%20wallpaper?width=1200&height=500&nologo=true&seed=7712',
+      luminous: 65, gravity: 42, nova: 28
     }
+  ];
 
-    const initialNodes = [
-      {
-        title: 'Architecting Verifiable Syntactic Universes',
-        category: 'Cosmic Systems',
-        content: `[TAGS:Architecture,Cosmos,Logic]\n\nKnowledge is not a static ledger; it is a radiant constellation. When ideas collide at relativistic speeds, they produce intellectual resonance capable of re-architecting systems. Through cryptographic immutability, we preserve the purity of human discovery.`,
-        cover: 'https://image.pollinations.ai/prompt/cybernetic%20cosmic%20constellation%20portal%20neon%20amber%20violet%20stardust%208k%20wallpaper?width=1200&height=500&nologo=true&seed=42',
-        luminous: 42, gravity: 18, nova: 9
-      },
-      {
-        title: 'Bioluminescent Waves: When the Ocean Mimics the Night Sky',
-        category: 'Cool Facts',
-        content: `[TAGS:Nature,OceanScience,Optics]\n\n# The Living Light of the Midnight Surf\n\nStanding on a quiet shoreline after midnight, an incoming wave crashes with an electric neon-cyan glow.\n\n### What Causes the Cold Neon Fire?\nThe phenomenon is driven by microscopic single-celled marine plankton called **dinoflagellates**. When disturbed by crashing waves, mechanical shear triggers cold enzymatic light.\n\n> Nearly 100% of the energy is converted directly to light with zero thermal loss.`,
-        cover: 'https://image.pollinations.ai/prompt/bioluminescent%20neon%20cyan%20ocean%20waves%20midnight%20shoreline%20stardust%20glow%208k%20wallpaper?width=1200&height=500&nologo=true&seed=909',
-        luminous: 58, gravity: 24, nova: 19
-      },
-      {
-        title: 'The 5:30 AM Shift: Why the World Hits Different Before the Noise Starts',
-        category: 'Daily Life',
-        content: `[TAGS:DailyLife,Mindfulness,MorningVibes]\n\n# The Unclaimed Hours\n\nThere is a brief, almost sacred window of time right around 5:30 in the morning that feels completely detached from the rest of the 24-hour cycle.\n\n### The Architecture of the Blue Hour\nPhotographers talk about the Golden Hour, but the Blue Hour is where the real mental reset happens.\n\n> We spend most of our lives managing momentum. The early morning is one of the rare times you get to choose its direction.`,
-        cover: 'https://image.pollinations.ai/prompt/cozy%20quiet%20early%20morning%20coffee%20mug%20window%20dawn%20blue%20hour%20sunlight%20cinematic%208k?width=1200&height=500&nologo=true&seed=5309',
-        luminous: 37, gravity: 31, nova: 14
-      },
-      {
-        title: 'Ghost Rivers Beneath the Asphalt: The Lost Waterways Running Under Cities',
-        category: 'Cool Facts',
-        content: `[TAGS:UrbanExploration,Hydrology,Geography]\n\n# The Buried Currents\n\nAlmost every historic metropolis on Earth was built along freshwater tributaries. But as populations exploded, surface rivers were enclosed into subterranean brick barrel vaults.\n\n> You can pave over a river with stone and asphalt, but water preserves an uncompromising institutional memory.`,
-        cover: 'https://image.pollinations.ai/prompt/subterranean%20brick%20aqueduct%20river%20tunnel%20running%20beneath%20a%20modern%20city%20reflections%208k%20wallpaper?width=1200&height=500&nologo=true&seed=7712',
-        luminous: 65, gravity: 42, nova: 28
-      }
-    ];
-
-    for (const node of initialNodes) {
-      const exists = await db.get(`SELECT id FROM posts WHERE title = ?`, [node.title]);
-      if (!exists) {
-        const hash = crypto.createHash('sha256').update(node.content).digest('hex');
-        await db.run(
-          `INSERT INTO posts (title, category, content, cover_image, author_id, author_name, crypto_hash, luminous_count, gravity_count, nova_count)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [node.title, node.category, node.content, node.cover, user.id, 'OrionPrime', hash, node.luminous, node.gravity, node.nova]
-        );
-      }
+  for (const node of initialNodes) {
+    const existing = await db.get(`SELECT id FROM posts WHERE title = ?`, [node.title]);
+    if (!existing) {
+      const hash = crypto.createHash('sha256').update(node.content).digest('hex');
+      await db.run(
+        `INSERT INTO posts (title, category, content, cover_image, author_id, author_name, crypto_hash, luminous_count, gravity_count, nova_count)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [node.title, node.category, node.content, node.cover, user.id, 'OrionPrime', hash, node.luminous, node.gravity, node.nova]
+      );
+      console.log('Seeded post:', node.title);
     }
   }
 }
@@ -163,7 +163,7 @@ app.get('/api/posts', async (req, res) => {
   try {
     const posts = await db.all(`
       SELECT p.*, (SELECT COUNT(*) FROM comments WHERE post_id = p.id) as comment_count 
-      FROM posts p ORDER BY p.created_at DESC
+      FROM posts p ORDER BY p.id DESC
     `);
     res.json(posts);
   } catch (err) {
